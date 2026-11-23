@@ -17,8 +17,9 @@ function makeCode() {
     return code;
 }
 
-app.post("/api/links", (req, res) => {
-    const { url } = req.body;
+app.post("/api/links", (req, res) => { 
+    
+    const { url, alias } = req.body;
 
     if (!url) {
         return res.status(400).json({
@@ -39,9 +40,18 @@ app.post("/api/links", (req, res) => {
             error: "Please enter a valid HTTP or HTTPS URL"
         });
     }
+if (alias) {
+  if (!/^[a-zA-Z0-9-]{3,20}$/.test(alias) || alias === "api") {
+    return res.status(400).json({
+      error: "Alias must be 3-20 letters, numbers or hyphens"
+    });
+  }
+  if (links.find(item => item.code === alias)) {
+    return res.status(409).json({ error: "Alias already taken" });
+  }
+}
 
-    const code = makeCode();
-
+    const code = alias || makeCode();
     links.push({
         code: code,
         url: validUrl.href
@@ -54,6 +64,20 @@ app.post("/api/links", (req, res) => {
     });
 });
 
+app.get("/api/links/:code", (req, res) => {
+
+    const code = req.params.code;
+
+    const link = links.find(item => item.code === code);
+
+    if (!link) {
+        return res.status(404).json({
+            error: "Link not found"
+        });
+    }
+
+    res.status(200).json(link);
+});
 app.get("/:code", (req, res) => {
     const code = req.params.code;
 
